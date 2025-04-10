@@ -1,0 +1,13 @@
+1:57:02
+3:53:00
+
+C:\Users\HP\AppData\Local\npm-cache\_logs
+
+NPX shadcn@latest dropdown-menu
+NPX shadcn@latest badge
+npm i @web3auth/modal
+
+chainlist.org/?search=bttc&testnets=true        1:22:55
+sepolia.etherscan.io
+
+5:36:42
