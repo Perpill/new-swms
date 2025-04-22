@@ -4,31 +4,32 @@ import './globals.css';
 import { useState, useEffect } from 'react'
 import { ArrowRight, Leaf, Recycle, Users, Coins, MapPin, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-// import { Poppins } from 'next/font/google'
 import Link from 'next/link'
 import ContractInteraction from '@/components/ContractInteraction'
-import { getRecentReports, getAllRewards, getWasteCollectionTasks } from '@/utils/db/actions'
-
-// const poppins = Poppins({
-//   weight: ['300', '400', '600'],
-//   subsets: ['latin'],
-//   display: 'swap',
-// })
+import { 
+  getRecentReports, 
+  getAllRewards, 
+  getWasteCollectionTasks, 
+  getUserByEmail 
+} from '@/utils/db/actions'  // Combined import
+import AuthModal from '@/components/AuthModal';
 
 function AnimatedGlobe() {
   return (
     <div className="relative w-32 h-32 mx-auto mb-8">
-      <div className="absolute inset-0 rounded-full bg-blue-500 opacity-20 animate-pulse"></div>
-      <div className="absolute inset-2 rounded-full bg-blue-400 opacity-40 animate-ping"></div>
-      <div className="absolute inset-4 rounded-full bg-blue-300 opacity-60 animate-spin"></div>
-      <div className="absolute inset-6 rounded-full bg-blue-200 opacity-80 animate-bounce"></div>
-      <Leaf className="absolute inset-0 m-auto h-16 w-16 text-blue-600 animate-pulse" />
+      <div className="absolute inset-0 rounded-full bg-blue-700 opacity-20 animate-pulse"></div>
+      <div className="absolute inset-2 rounded-full bg-blue-600 opacity-40 animate-ping"></div>
+      <div className="absolute inset-4 rounded-full bg-blue-500 opacity-60 animate-spin"></div>
+      <div className="absolute inset-6 rounded-full bg-blue-400 opacity-80 animate-bounce"></div>
+      {/* <Leaf className="absolute inset-0 m-auto h-16 w-16 text-blue-600 animate-pulse" /> */}
     </div>
   )
 }
 
 export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [impactData, setImpactData] = useState({
     wasteCollected: 0,
     reportsSubmitted: 0,
@@ -39,31 +40,42 @@ export default function Home() {
 
 
   useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const email = localStorage.getItem("userEmail");
+        if (email) {
+          const userData = await getUserByEmail(email);
+          if (userData) {
+            setUserRole(userData.role); // "0" for reporter, "1" for collector
+            setLoggedIn(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    }
+
     async function fetchImpactData() {
       try {
-        const reports = await getRecentReports(100);  // Fetch last 100 reports
-        const rewards = await getAllRewards();
-        const tasks = await getWasteCollectionTasks(100);  // Fetch last 100 tasks
+        const [reports, rewards, tasks] = await Promise.all([
+          getRecentReports(100),
+          getAllRewards(),
+          getWasteCollectionTasks(100)
+        ]);
 
         const wasteCollected = tasks.reduce((total, task) => {
           const match = task.amount.match(/(\d+(\.\d+)?)/);
-          const amount = match ? parseFloat(match[0]) : 0;
-          return total + amount;
+          return total + (match ? parseFloat(match[0]) : 0);
         }, 0);
 
-        const reportsSubmitted = reports.length;
-        const tokensEarned = rewards.reduce((total, reward) => total + (reward.points || 0), 0);
-        const co2Offset = wasteCollected * 0.5;  // Assuming 0.5 kg CO2 offset per kg of waste
-
         setImpactData({
-          wasteCollected: Math.round(wasteCollected * 10) / 10, // Round to 1 decimal place
-          reportsSubmitted,
-          tokensEarned,
-          co2Offset: Math.round(co2Offset * 10) / 10 // Round to 1 decimal place
+          wasteCollected: Math.round(wasteCollected * 10) / 10,
+          reportsSubmitted: reports.length,
+          tokensEarned: rewards.reduce((total, reward) => total + (reward.points || 0), 0),
+          co2Offset: Math.round(wasteCollected * 0.5 * 10) / 10
         });
       } catch (error) {
         console.error("Error fetching impact data:", error);
-        // Set default values in case of error
         setImpactData({
           wasteCollected: 0,
           reportsSubmitted: 0,
@@ -73,12 +85,78 @@ export default function Home() {
       }
     }
 
+
+    // async function fetchImpactData() {
+    //   try {
+    //     const reports = await getRecentReports(100);  // Fetch last 100 reports
+    //     const rewards = await getAllRewards();
+    //     const tasks = await getWasteCollectionTasks(100);  // Fetch last 100 tasks
+
+    //     const wasteCollected = tasks.reduce((total, task) => {
+    //       const match = task.amount.match(/(\d+(\.\d+)?)/);
+    //       const amount = match ? parseFloat(match[0]) : 0;
+    //       return total + amount;
+    //     }, 0);
+
+    //     const reportsSubmitted = reports.length;
+    //     const tokensEarned = rewards.reduce((total, reward) => total + (reward.points || 0), 0);
+    //     const co2Offset = wasteCollected * 0.5;  // Assuming 0.5 kg CO2 offset per kg of waste
+
+    //     setImpactData({
+    //       wasteCollected: Math.round(wasteCollected * 10) / 10, // Round to 1 decimal place
+    //       reportsSubmitted,
+    //       tokensEarned,
+    //       co2Offset: Math.round(co2Offset * 10) / 10 // Round to 1 decimal place
+    //     });
+    //   } catch (error) {
+    //     console.error("Error fetching impact data:", error);
+    //     // Set default values in case of error
+    //     setImpactData({
+    //       wasteCollected: 0,
+    //       reportsSubmitted: 0,
+    //       tokensEarned: 0,
+    //       co2Offset: 0
+    //     });
+    //   }
+    // }
+
+    fetchUserData()
     fetchImpactData();
   }, []);
 
-  const login = () => {
+  const handleLoginSuccess = (email: string, name: string, role: string) => {
     setLoggedIn(true);
+    setUserRole(role);
+    localStorage.setItem("userEmail", email);
+    localStorage.setItem("userName", name);
+    localStorage.setItem("userRole", role);
+    setShowAuthModal(false);
   };
+
+  const handleGetStartedClick = () => {
+    if (!loggedIn) {
+      setShowAuthModal(true);
+    }
+    // If loggedIn, the Link component will handle the navigation
+  };
+
+  const getDestinationPath = () => {
+    if (userRole === "0") {
+      return "/report";
+    } else if (userRole === "1") {
+      return "/collect";
+    }
+    return "/"; // Default fallback
+  };
+  
+  // const login = () => {
+  //   setLoggedIn(true);
+  // };
+
+  
+  // Only show report button if user is a reporter (role "0") or not logged in
+  const shouldShowReportButton = !loggedIn || userRole === "0";
+  // const userRole = localStorage.getItem("userRole") || "";
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -88,21 +166,42 @@ export default function Home() {
           KIBU <span className="text-blue-600">Waste Management</span>
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
-          Join our community in making waste management more efficient and rewarding!
+          Join us in making waste management more efficient and rewarding!
         </p>
+
+
         {!loggedIn ? (
-          <Button onClick={login} className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 px-10 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105">
+          <Button 
+            onClick={() => setShowAuthModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 px-10 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105"
+          >
             Get Started
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         ) : (
-          <Link href="/report">
+          <Link href={getDestinationPath()}>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 px-10 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105">
-              Report Waste
+              {userRole === "0" ? "Report Waste" : "Collect Waste"}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         )}
+
+        {/* {shouldShowReportButton && (
+          !loggedIn ? (
+            <Button onClick={login} className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 px-10 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105">
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          ) : (
+            <Link href="/report">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 px-10 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105">
+                Report Waste
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          )
+        )} */}
       </section>
 
       <section className="grid md:grid-cols-3 gap-10 mb-20">
@@ -124,15 +223,20 @@ export default function Home() {
       </section>
 
       <section className="bg-white p-10 rounded-3xl shadow-lg mb-20">
-        <h2 className="text-4xl font-bold mb-12 text-center text-gray-800">Our Impact</h2>
+        <h2 className="text-4xl font-bold mb-12 text-center text-gray-800">Impact</h2>
         <div className="grid md:grid-cols-4 gap-6">
-          <ImpactCard title="Waste Collected" value={`${impactData.wasteCollected} kg`} icon={Recycle} />
-          <ImpactCard title="Reports Submitted" value={impactData.reportsSubmitted.toString()} icon={MapPin} />
-          <ImpactCard title="Tokens Earned" value={impactData.tokensEarned.toString()} icon={Coins} />
+          <ImpactCard title="Collected Waste" value={`${impactData.wasteCollected} kg`} icon={Recycle} />
+          <ImpactCard title="Submitted Reports" value={impactData.reportsSubmitted.toString()} icon={MapPin} />
+          <ImpactCard title="Earned Tokens" value={impactData.tokensEarned.toString()} icon={Coins} />
           <ImpactCard title="CO2 Offset" value={`${impactData.co2Offset} kg`} icon={Leaf} />
         </div>
       </section>
-
+  {/* Auth Modal */}
+  <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
     </div>
   )

@@ -1,10 +1,11 @@
-import type { Config } from 'drizzle-kit';
+// drizzle.config.js
+import { defineConfig } from "drizzle-kit";
 
-export default {
-  schema: './src/db/schema.ts',
-  out: './drizzle',
-  driver: 'pg',
+export default defineConfig({
+  dialect: "postgresql",
+  schema: "./src/utils/db/schema.ts",
+  out: "./drizzle/migrations",
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
+    url: "postgresql://neondb_owner:npg_w1QmkEiaANb8@ep-fancy-mouse-a5tcmu8x-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require",
   },
-} satisfies Config;
+});

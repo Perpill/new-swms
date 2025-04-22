@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react'
 import { Coins, ArrowUpRight, ArrowDownRight, Gift, AlertCircle, Loader } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getUserByEmail, getRewardTransactions, getAvailableRewards, blueeemReward, createTransaction } from '@/utils/db/actions'
+import { getUserByEmail, getRewardTransactions, getAvailableRewards, redeemReward, createTransaction } from '@/utils/db/actions'
 import { toast } from 'react-hot-toast'
 
 type Transaction = {
   id: number
-  type: 'earned_report' | 'earned_collect' | 'blueeemed'
+  type: 'earned_report' | 'earned_collect' | 'redeemed'
   amount: number
   description: string
   date: string
@@ -62,9 +62,9 @@ export default function RewardsPage() {
     fetchUserDataAndRewards()
   }, [])
 
-  const handleblueeemReward = async (rewardId: number) => {
+  const handleRedeemReward = async (rewardId: number) => {
     if (!user) {
-      toast.error('Please log in to blueeem rewards.')
+      toast.error('Please log in to redeem rewards.')
       return
     }
 
@@ -72,53 +72,53 @@ export default function RewardsPage() {
     if (reward && balance >= reward.cost && reward.cost > 0) {
       try {
         if (balance < reward.cost) {
-          toast.error('Insufficient balance to blueeem this reward')
+          toast.error('Insufficient balance to redeem this reward')
           return
         }
 
         // Update database
-        await blueeemReward(user.id, rewardId);
+        await redeemReward(user.id, rewardId);
 
         // Create a new transaction record
-        await createTransaction(user.id, 'blueeemed', reward.cost, `blueeemed ${reward.name}`);
+        await createTransaction(user.id, 'redeemed', reward.cost, `redeemed ${reward.name}`);
 
-        // Refresh user data and rewards after blueemption
+        // Refresh user data and rewards after redemption
         await refreshUserData();
 
-        toast.success(`You have successfully blueeemed: ${reward.name}`)
+        toast.success(`You have successfully redeemed: ${reward.name}`)
       } catch (error) {
-        console.error('Error blueeeming reward:', error)
-        toast.error('Failed to blueeem reward. Please try again.')
+        console.error('Error redeeming reward:', error)
+        toast.error('Failed to redeem reward. Please try again.')
       }
     } else {
       toast.error('Insufficient balance or invalid reward cost')
     }
   }
 
-  const handleblueeemAllPoints = async () => {
+  const handleRedeemAllPoints = async () => {
     if (!user) {
-      toast.error('Please log in to blueeem points.');
+      toast.error('Please log in to redeem points.');
       return;
     }
 
     if (balance > 0) {
       try {
         // Update database
-        await blueeemReward(user.id, 0);
+        await redeemReward(user.id, 0);
 
         // Create a new transaction record
-        await createTransaction(user.id, 'blueeemed', balance, 'blueeemed all points');
+        await createTransaction(user.id, 'redeemed', balance, 'redeemed all points');
 
-        // Refresh user data and rewards after blueemption
+        // Refresh user data and rewards after redemption
         await refreshUserData();
 
-        toast.success(`You have successfully blueeemed all your points!`);
+        toast.success(`You have successfully redeemed all your points!`);
       } catch (error) {
-        console.error('Error blueeeming all points:', error);
-        toast.error('Failed to blueeem all points. Please try again.');
+        console.error('Error redeeming all points:', error);
+        toast.error('Failed to redeem all points. Please try again.');
       }
     } else {
-      toast.error('No points available to blueeem')
+      toast.error('No points available to redeem')
     }
   }
 
@@ -151,7 +151,7 @@ export default function RewardsPage() {
       <h1 className="text-3xl font-semibold mb-6 text-gray-800">Rewards</h1>
 
       <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col justify-between h-full border-l-4 border-blue-500 mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Reward Balance</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Balance</h2>
         <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center">
             <Coins className="w-10 h-10 mr-3 text-blue-500" />
@@ -209,22 +209,22 @@ export default function RewardsPage() {
                   {reward.id === 0 ? (
                     <div className="space-y-2">
                       <Button
-                        onClick={handleblueeemAllPoints}
+                        onClick={handleRedeemAllPoints}
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                         disabled={balance === 0}
                       >
                         <Gift className="w-4 h-4 mr-2" />
-                        blueeem All Points
+                        Redeem All Points
                       </Button>
                     </div>
                   ) : (
                     <Button
-                      onClick={() => handleblueeemReward(reward.id)}
+                      onClick={() => handleRedeemReward(reward.id)}
                       className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                       disabled={balance < reward.cost}
                     >
                       <Gift className="w-4 h-4 mr-2" />
-                      blueeem Reward
+                      Redeem Reward
                     </Button>
                   )}
                 </div>

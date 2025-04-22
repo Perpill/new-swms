@@ -1,6 +1,8 @@
 {
+  "name": "new-wms",
+  "type": "module",
   "scripts": {
-    "dev": "nodemon --watch ./src --exec next dev",
+    "dev": "nodemon --watch ./src --exec next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -31,6 +33,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
+    "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7"
   },

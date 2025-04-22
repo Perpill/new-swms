@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { StandaloneSearchBox, useJsApiLoader } from "@react-google-maps/api";
 import { Libraries } from "@react-google-maps/api";
-import ContractInteraction from '@/components/ContractInteraction';
-import { EXIF } from 'exif-js';
+import ContractInteraction from "@/components/ContractInteraction";
+import { EXIF } from "exif-js";
 import {
   createUser,
   getUserByEmail,
@@ -57,8 +57,8 @@ export default function ReportPage() {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [searchBox, setSearchBox] =
-    useState<google.maps.places.SearchBox | null>(null);
+  // const [searchBox, setSearchBox] =
+  //   useState<google.maps.places.SearchBox | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -66,27 +66,22 @@ export default function ReportPage() {
     libraries: libraries,
   });
 
-  const onLoad = useCallback((ref: google.maps.places.SearchBox) => {
-    setSearchBox(ref);
-  }, []);
+  // const onLoad = useCallback((ref: google.maps.places.SearchBox) => {
+  //   setSearchBox(ref);
+  // }, []);
 
-
-
-
-
-
-  const onPlacesChanged = () => {
-    if (searchBox) {
-      const places = searchBox.getPlaces();
-      if (places && places.length > 0) {
-        const place = places[0];
-        setNewReport((prev) => ({
-          ...prev,
-          location: place.formatted_address || "",
-        }));
-      }
-    }
-  };
+  // const onPlacesChanged = () => {
+  //   if (searchBox) {
+  //     const places = searchBox.getPlaces();
+  //     if (places && places.length > 0) {
+  //       const place = places[0];
+  //       setNewReport((prev) => ({
+  //         ...prev,
+  //         location: place.formatted_address || "",
+  //       }));
+  //     }
+  //   }
+  // };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -95,42 +90,50 @@ export default function ReportPage() {
     setNewReport({ ...newReport, [name]: value });
   };
 
-
-
-
-  const fetchAddressFromCoords = async (lat, lon) => {
+  const fetchAddressFromCoords = async (lat: number, lon: number) => {
     // const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-    const apiKey = 'AIzaSyA1y4o-M4weqklUak4-Zqc2rQYjPVK3GS4';
+    const apiKey = "AIzaSyA1y4o-M4weqklUak4-Zqc2rQYjPVK3GS4";
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`;
 
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error("Geocoding API request failed");
+
       const data = await response.json();
 
       if (data.status === "OK" && data.results.length > 0) {
-        const address = data.results[0].formatted_address;
-        console.log("Extracted Address:", address);
+        // const address = data.results[0].formatted_address;
 
         // Update the location field in your form
-        setNewReport((prev) => ({ ...prev, location: address }));
+        setNewReport((prev) => ({
+          ...prev,
+          location: data.results[0].formatted_address,
+        }));
+        // setNewReport((prev) => ({ ...prev, location: address }));
+        console.log("Extracted Address:", formatted_address);
       } else {
+        toast.error("Could not determine address from coordinates");
         console.error("No address found for these coordinates.");
       }
     } catch (error) {
+      toast.error("Failed to fetch address, please enter it manually");
       console.error("Error fetching address:", error);
     }
   };
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+      setFile(selectedFile);
 
+      //set preview
       const reader = new FileReader();
       reader.onload = (event) => {
+        setPreview(event.target?.result as string);
+
+        //extract exif data
         const img = new Image();
         img.src = event.target?.result as string;
-
         img.onload = () => {
           EXIF.getData(img, function () {
             const lat = EXIF.getTag(this, "GPSLatitude");
@@ -141,13 +144,16 @@ export default function ReportPage() {
             if (lat && lon) {
               const latitude = convertDMSToDD(lat, latRef);
               const longitude = convertDMSToDD(lon, lonRef);
+              fetchAddressFromCoords(latitude, longitude);
 
               console.log("Extracted Coordinates:", latitude, longitude);
 
               // Call function to fetch the address
-              fetchAddressFromCoords(latitude, longitude);
             } else {
               console.log("No GPS data found in image.");
+              toast.error(
+                "No GPS data found in the image. Please enter the location manually"
+              );
             }
           });
         };
@@ -227,11 +233,6 @@ export default function ReportPage() {
 
       console.log("AI Response:", text);
 
-
-
-
-
-
       try {
         const cleanedText = text.replace(/```json|```/g, "").trim(); // Remove markdown formatting
         const parsedResult = JSON.parse(cleanedText);
@@ -255,9 +256,6 @@ export default function ReportPage() {
         console.error("Failed to parse JSON response:", text);
         setVerificationStatus("failure");
       }
-
-
-
     } catch (error) {
       console.error("Error verifying waste:", error);
       setVerificationStatus("failure");
@@ -311,6 +309,7 @@ export default function ReportPage() {
   useEffect(() => {
     const checkUser = async () => {
       const email = localStorage.getItem("userEmail");
+
       if (email) {
         let user = await getUserByEmail(email);
         if (!user) {
@@ -428,7 +427,7 @@ export default function ReportPage() {
             >
               Location
             </label>
-            {isLoaded ? (
+            {/* {isLoaded ? (
               <StandaloneSearchBox
                 onLoad={onLoad}
                 onPlacesChanged={onPlacesChanged}
@@ -439,23 +438,23 @@ export default function ReportPage() {
                   name="location"
                   value={newReport.location}
                   onChange={handleInputChange}
-                  requiblue
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
                   placeholder="Enter waste location"
                 />
               </StandaloneSearchBox>
-            ) : (
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={newReport.location}
-                onChange={handleInputChange}
-                requiblue
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
-                placeholder="Enter waste location"
-              />
-            )}
+            ) : ( */}
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={newReport.location}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+              placeholder="Enter waste location"
+            />
+            {/* )} */}
           </div>
           <div>
             <label
@@ -470,7 +469,7 @@ export default function ReportPage() {
               name="type"
               value={newReport.type}
               onChange={handleInputChange}
-              requiblue
+              required
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 bg-gray-100"
               placeholder="Verified waste type"
               readOnly
@@ -489,7 +488,7 @@ export default function ReportPage() {
               name="amount"
               value={newReport.amount}
               onChange={handleInputChange}
-              requiblue
+              required
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 bg-gray-100"
               placeholder="Verified amount"
               readOnly
