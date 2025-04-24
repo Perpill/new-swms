@@ -265,87 +265,28 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
   const [balance, setBalance] = useState(0);
   const [logoutLoading, setLogoutLoading] = useState(false)
 
-  const handleBalanceUpdate = (event: Event) => {
-    const customEvent = event as CustomEvent<number>;
-    setBalance(customEvent.detail);
+  // const handleBalanceUpdate = (event: Event) => {
+  //   const customEvent = event as CustomEvent<number>;
+  //   setBalance(customEvent.detail);
+  // };
+  const handleBalanceUpdate = async () => {
+    if (userInfo.id) {
+      await fetchAndUpdateBalance(userInfo.id);
+    }
   };
 
-  // useEffect(() => {
-  //   const checkUser = async () => {
-  //     // Check for existing session on load
-  //     const email = localStorage.getItem("userEmail");
-  //     const name = localStorage.getItem("userName") || "User";
-  //     if (email) {
-  //       setUserInfo({ email, name });
-  //       setLoggedIn(true);
 
-  //       // fetch user data only once
-  //       const user = await getUserByEmail(userInfo.email);
 
-  //       if (user) {
-  //         const [unreadNotifications, userBalance, fetchNotifications] =
-  //           await Promise.all([
-  //             getUnreadNotifications(user.id),
-  //             getUserBalance(user.id),
-  //           ]);
-
-  //         setNotifications(unreadNotifications);
-  //         setBalance(userBalance);
-  //       }
-
-  //       window.addEventListener("balanceUpdated", handleBalanceUpdate);
-  //       return () => {
-  //         window.removeEventListener("balanceUpdated", handleBalanceUpdate);
-  //       };
-  //     }
-  //   };
-
-  //   checkUser();
-  // }, []);
-
-  // useEffect(() => {
-  //   const fetchNotifications = async () => {
-  //     if (userInfo.email) {
-  //       const user = await getUserByEmail(userInfo.email);
-  //       if (user) {
-  //         const unreadNotifications = await getUnreadNotifications(user.id);
-  //         setNotifications(unreadNotifications);
-  //       }
-  //     }
-  //   };
-
-  //   fetchNotifications();
-  //   const notificationInterval = setInterval(fetchNotifications, 30000);
-  //   return () => clearInterval(notificationInterval);
-  // }, [userInfo]);
-
-  // useEffect(() => {
-  //   const fetchUserBalance = async () => {
-  //     if (userInfo.email) {
-  //       const user = await getUserByEmail(userInfo.email);
-  //       if (user) {
-  //         const userBalance = await getUserBalance(user.id);
-  //         setBalance(userBalance);
-  //       }
-  //     }
-  //   };
-
-  //   fetchUserBalance();
-  //   const handleBalanceUpdate = (event: CustomEvent) => {
-  //     setBalance(event.detail);
-  //   };
-
-  //   window.addEventListener(
-  //     "balanceUpdated",
-  //     handleBalanceUpdate as EventListener
-  //   );
-  //   return () => {
-  //     window.removeEventListener(
-  //       "balanceUpdated",
-  //       handleBalanceUpdate as EventListener
-  //     );
-  //   };
-  // }, [userInfo]);
+  const fetchAndUpdateBalance = async (userId: number) => {
+    try {
+      const currentBalance = await getUserBalance(userId);
+      setBalance(Math.max(currentBalance, 0)); // Ensure balance is never negative
+      return currentBalance;
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      return 0;
+    }
+  };
 
 useEffect(() => {
     const fetchUserData = async () => {
@@ -359,7 +300,8 @@ useEffect(() => {
             id: user.id
           });
           setLoggedIn(true);
-          await fetchUserBalance(user.id);
+          // await getUserBalance(user.id);
+          await fetchAndUpdateBalance(user.id);
           
           // Fetch notifications
           const unreadNotifications = await getUnreadNotifications(user.id);
@@ -371,11 +313,11 @@ useEffect(() => {
     fetchUserData();
 
     // Set up event listener for balance updates
-    const handleBalanceUpdate = () => {
-      if (userInfo.id) {
-        fetchUserBalance(userInfo.id);
-      }
-    };
+    // const handleBalanceUpdate = () => {
+    //   if (userInfo.id) {
+    //     getUserBalance(userInfo.id);
+    //   }
+    // };
 
     window.addEventListener('balanceUpdated', handleBalanceUpdate);
     return () => {
@@ -383,19 +325,9 @@ useEffect(() => {
     };
   }, []);
 
-  const fetchUserBalance = async (userId: number) => {
-    try {
-      const transactions = await getRewardTransactions(userId);
-      const calculatedBalance = transactions.reduce((acc, transaction) => {
-        return transaction.type.startsWith('earned') 
-          ? acc + transaction.amount 
-          : acc - transaction.amount;
-      }, 0);
-      setBalance(Math.max(calculatedBalance, 0));
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-    }
-  };
+
+
+
 
   const handleLoginSuccess = (email: string, name: string,role:string) => {
     setUserInfo({ email, name, role });
@@ -518,20 +450,30 @@ useEffect(() => {
 
 
                  {/* Reward Balance - Added this section */}
-            {loggedIn && (
+                 {/* {loggedIn && (
+  <div className="flex items-center bg-green-50 rounded-full px-3 py-1">
+    <Coins className="h-4 w-4 text-green-600 mr-1" />
+    <span className="font-medium text-sm text-green-700">
+      {balance} pts
+    </span>
+  </div>
+)} */}
+            {/* {loggedIn && (
               <div className="flex items-center bg-blue-50 rounded-full px-3 py-1">
                 <Coins className="h-4 w-4 text-blue-500 mr-1" />
                 <span className="font-medium text-sm text-blue-700">
                   {balance} pts
                 </span>
               </div>
-            )}
-            {/* <div className="mr-2 md:mr-4 flex items-center bg-gray-100 rounded-full px-2 md:px-3 py-1">
+            )} */}
+            {loggedIn && (
+            <div className="mr-2 md:mr-4 flex items-center bg-gray-100 rounded-full px-2 md:px-3 py-1">
               <Coins className="h-4 w-4 md:h-5 md:w-5 mr-1 text-blue-500" />
               <span className="font-semibold text-sm md:text-base text-gray-800">
                 {balance.toFixed(2)}
               </span>
-            </div> */}
+            </div>
+            )}
 
             {!loggedIn ? (
               <button

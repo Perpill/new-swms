@@ -53,7 +53,7 @@ export async function createUser(email: string, name: string, phone: string) {
         email, 
         name, 
         phone,
-        role: 'reporter' // Default role for new users
+        role: '0' // Default role for new users
       })
       .returning()
       .execute();
@@ -612,15 +612,29 @@ export async function redeemReward(userId: number, rewardId: number) {
   }
 }
 
+// export async function getUserBalance(userId: number): Promise<number> {
+//   const transactions = await getRewardTransactions(userId);
+//   const balance = transactions.reduce(
+//     (acc: number, transaction: TransactionType) => {
+//       return transaction.type.startsWith("earned")
+//         ? acc + transaction.amount
+//         : acc - transaction.amount;
+//     },
+//     0
+//   );
+//   return Math.max(balance, 0); // Ensure balance is never negative
+// }
+
 export async function getUserBalance(userId: number): Promise<number> {
-  const transactions = await getRewardTransactions(userId);
-  const balance = transactions.reduce(
-    (acc: number, transaction: TransactionType) => {
-      return transaction.type.startsWith("earned")
-        ? acc + transaction.amount
+  try {
+    const transactions = await getRewardTransactions(userId);
+    return transactions.reduce((acc, transaction) => {
+      return transaction.type.startsWith('earned') 
+        ? acc + transaction.amount 
         : acc - transaction.amount;
-    },
-    0
-  );
-  return Math.max(balance, 0); // Ensure balance is never negative
+    }, 0);
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    return 0;
+  }
 }

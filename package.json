@@ -2,7 +2,7 @@
   "name": "new-wms",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --watch ./src --exec next dev --turbopack",
+    "dev": "nodemon --watch ./src --exec next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

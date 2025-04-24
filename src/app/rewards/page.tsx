@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Coins, ArrowUpRight, ArrowDownRight, Gift, AlertCircle, Loader } from 'lucide-react'
+import { Coins, ArrowUpRight, ArrowDownRight, AlertCircle, Loader } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getUserByEmail, getRewardTransactions, getAvailableRewards, redeemReward, createTransaction } from '@/utils/db/actions'
 import { toast } from 'react-hot-toast'
@@ -62,6 +62,21 @@ export default function RewardsPage() {
     fetchUserDataAndRewards()
   }, [])
 
+  const refreshBalance = async () => {
+    if (user) {
+      const transactions = await getRewardTransactions(user.id);
+      const calculatedBalance = transactions.reduce((acc, transaction) => {
+        return transaction.type.startsWith('earned') ? acc + transaction.amount : acc - transaction.amount;
+      }, 0);
+      setBalance(Math.max(calculatedBalance, 0));
+      
+      // Dispatch event to update header balance
+      window.dispatchEvent(new CustomEvent('balanceUpdated', {
+        detail: Math.max(calculatedBalance, 0)
+      }));
+    }
+  };
+
   const handleRedeemReward = async (rewardId: number) => {
     if (!user) {
       toast.error('Please log in to redeem rewards.')
@@ -77,13 +92,17 @@ export default function RewardsPage() {
         }
 
         // Update database
-        await redeemReward(user.id, rewardId);
+        // await redeemReward(user.id, rewardId);
+        await redeemReward(user.id, 0);
 
         // Create a new transaction record
-        await createTransaction(user.id, 'redeemed', reward.cost, `redeemed ${reward.name}`);
+        // await createTransaction(user.id, 'redeemed', reward.cost, `redeemed ${reward.name}`);
+        await createTransaction(user.id, 'redeemed', balance, `redeemed all points`);
 
         // Refresh user data and rewards after redemption
+
         await refreshUserData();
+        await refreshBalance();
 
         toast.success(`You have successfully redeemed: ${reward.name}`)
       } catch (error) {
@@ -107,10 +126,12 @@ export default function RewardsPage() {
         await redeemReward(user.id, 0);
 
         // Create a new transaction record
+        // await createTransaction(user.id, 'redeemed', balance, 'redeemed all points');
         await createTransaction(user.id, 'redeemed', balance, 'redeemed all points');
 
         // Refresh user data and rewards after redemption
         await refreshUserData();
+        await refreshBalance()
 
         toast.success(`You have successfully redeemed all your points!`);
       } catch (error) {
@@ -213,7 +234,6 @@ export default function RewardsPage() {
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                         disabled={balance === 0}
                       >
-                        <Gift className="w-4 h-4 mr-2" />
                         Redeem All Points
                       </Button>
                     </div>
@@ -223,7 +243,6 @@ export default function RewardsPage() {
                       className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                       disabled={balance < reward.cost}
                     >
-                      <Gift className="w-4 h-4 mr-2" />
                       Redeem Reward
                     </Button>
                   )}

@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { getAllRewards, getUserByEmail } from '@/utils/db/actions'
-import { Loader, Award, User, Trophy, Crown } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 type Reward = {
@@ -54,15 +53,12 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader className="animate-spin h-8 w-8 text-gray-600" />
           </div>
         ) : (
           <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
               <div className="flex justify-between items-center text-white">
-                <Trophy className="h-10 w-10" />
                 <span className="text-2xl font-bold">Top Performers</span>
-                <Award className="h-10 w-10" />
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -80,17 +76,11 @@ export default function LeaderboardPage() {
                     <tr key={reward.id} className={`${user && user.id === reward.userId ? 'bg-indigo-50' : ''} hover:bg-gray-50 transition-colors duration-150 ease-in-out`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {index < 3 ? (
-                            <Crown className={`h-6 w-6 ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-400' : 'text-yellow-600'}`} />
-                          ) : (
-                            <span className="text-sm font-medium text-gray-900">{index + 1}</span>
-                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <User className="h-full w-full rounded-full bg-gray-200 text-gray-500 p-2" />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{reward.userName}</div>
@@ -99,7 +89,6 @@ export default function LeaderboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Award className="h-5 w-5 text-indigo-500 mr-2" />
                           <div className="text-sm font-semibold text-gray-900">{reward.points.toLocaleString()}</div>
                         </div>
                       </td>

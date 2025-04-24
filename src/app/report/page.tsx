@@ -57,31 +57,11 @@ export default function ReportPage() {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // const [searchBox, setSearchBox] =
-  //   useState<google.maps.places.SearchBox | null>(null);
-
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: googleMapsApiKey!,
     libraries: libraries,
   });
-
-  // const onLoad = useCallback((ref: google.maps.places.SearchBox) => {
-  //   setSearchBox(ref);
-  // }, []);
-
-  // const onPlacesChanged = () => {
-  //   if (searchBox) {
-  //     const places = searchBox.getPlaces();
-  //     if (places && places.length > 0) {
-  //       const place = places[0];
-  //       setNewReport((prev) => ({
-  //         ...prev,
-  //         location: place.formatted_address || "",
-  //       }));
-  //     }
-  //   }
-  // };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -91,7 +71,6 @@ export default function ReportPage() {
   };
 
   const fetchAddressFromCoords = async (lat: number, lon: number) => {
-    // const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
     const apiKey = "AIzaSyA1y4o-M4weqklUak4-Zqc2rQYjPVK3GS4";
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`;
 
@@ -102,14 +81,12 @@ export default function ReportPage() {
       const data = await response.json();
 
       if (data.status === "OK" && data.results.length > 0) {
-        // const address = data.results[0].formatted_address;
 
         // Update the location field in your form
         setNewReport((prev) => ({
           ...prev,
           location: data.results[0].formatted_address,
         }));
-        // setNewReport((prev) => ({ ...prev, location: address }));
         console.log("Extracted Address:", formatted_address);
       } else {
         toast.error("Could not determine address from coordinates");
@@ -169,19 +146,6 @@ export default function ReportPage() {
     if (direction === "S" || direction === "W") decimal *= -1;
     return decimal;
   };
-
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files && e.target.files[0]) {
-  //     const selectedFile = e.target.files[0];
-  //     setFile(selectedFile);
-
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       setPreview(e.target?.result as string);
-  //     };
-  //     reader.readAsDataURL(selectedFile);
-  //   }
-  // };
 
   //convert the image into base64 which the gemini API is expecting
 
@@ -427,23 +391,6 @@ export default function ReportPage() {
             >
               Location
             </label>
-            {/* {isLoaded ? (
-              <StandaloneSearchBox
-                onLoad={onLoad}
-                onPlacesChanged={onPlacesChanged}
-              >
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={newReport.location}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
-                  placeholder="Enter waste location"
-                />
-              </StandaloneSearchBox>
-            ) : ( */}
             <input
               type="text"
               id="location"
@@ -540,7 +487,6 @@ export default function ReportPage() {
                   className="hover:bg-gray-50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <MapPin className="inline-block w-4 h-4 mr-2 text-blue-500" />
                     {report.location}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
