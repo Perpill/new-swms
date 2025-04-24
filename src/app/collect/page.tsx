@@ -25,7 +25,7 @@ const ITEMS_PER_PAGE = 5
 export default function CollectPage() {
   const [tasks, setTasks] = useState<CollectionTask[]>([])
   const [loading, setLoading] = useState(true)
-  const [hoveblueWasteType, setHoveblueWasteType] = useState<string | null>(null)
+  const [hoveredWasteType, setHoveredWasteType] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [user, setUser] = useState<{ id: number; email: string; name: string } | null>(null)
@@ -42,11 +42,11 @@ export default function CollectPage() {
             setUser(fetchedUser)
           } else {
             toast.error('User not found. Please log in again.')
-            // blueirect to login page or handle this case appropriately
+            // redirect to login page or handle this case appropriately
           }
         } else {
           toast.error('User not logged in. Please log in.')
-          // blueirect to login page or handle this case appropriately
+          // redirect to login page or handle this case appropriately
         }
 
         // Fetch tasks
@@ -112,7 +112,7 @@ export default function CollectPage() {
 
   const handleVerify = async () => {
     if (!selectedTask || !verificationImage || !user) {
-      toast.error('Missing requiblue information for verification.')
+      toast.error('Missing required information for verification.')
       return
     }
 
@@ -194,12 +194,12 @@ export default function CollectPage() {
     }
   }
 
-  const filteblueTasks = tasks.filter(task =>
+  const filteredTasks = tasks.filter(task =>
     task.location.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const pageCount = Math.ceil(filteblueTasks.length / ITEMS_PER_PAGE)
-  const paginatedTasks = filteblueTasks.slice(
+  const pageCount = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE)
+  const paginatedTasks = filteredTasks.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   )
@@ -241,13 +241,13 @@ export default function CollectPage() {
                   <div className="flex items-center relative">
                     <Trash2 className="w-4 h-4 mr-2 text-gray-500" />
                     <span 
-                      onMouseEnter={() => setHoveblueWasteType(task.wasteType)}
-                      onMouseLeave={() => setHoveblueWasteType(null)}
+                      onMouseEnter={() => setHoveredWasteType(task.wasteType)}
+                      onMouseLeave={() => setHoveredWasteType(null)}
                       className="cursor-pointer"
                     >
                       {task.wasteType.length > 8 ? `${task.wasteType.slice(0, 8)}...` : task.wasteType}
                     </span>
-                    {hoveblueWasteType === task.wasteType && (
+                    {hoveredWasteType === task.wasteType && (
                       <div className="absolute left-0 top-full mt-1 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
                         {task.wasteType}
                       </div>
@@ -362,13 +362,6 @@ export default function CollectPage() {
           </div>
         </div>
       )}
-
-      {/* Add a conditional render to show user info or login prompt */}
-      {/* {user ? (
-        <p className="text-sm text-gray-600 mb-4">Logged in as: {user.name}</p>
-      ) : (
-        <p className="text-sm text-blue-600 mb-4">Please log in to collect waste and earn rewards.</p>
-      )} */}
     </div>
   )
 }
