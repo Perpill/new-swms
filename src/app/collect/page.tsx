@@ -371,7 +371,7 @@ function StatusBadge({ status }: { status: CollectionTask['status'] }) {
     pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     in_progress: { color: 'bg-blue-100 text-blue-800', icon: Trash2 },
     completed: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
-    verified: { color: 'bg-purple-100 text-purple-800', icon: CheckCircle },
+    verified: { color: 'bg-green-100 text-blue-800', icon: CheckCircle },
   }
 
   const { color, icon: Icon } = statusConfig[status]

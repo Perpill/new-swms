@@ -90,7 +90,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
         </button>
 
         <h2 className="text-2xl font-bold mb-6 text-center">
-          {isLogin ? "Login" : "Sign Up"}
+          {isLogin ? "Login" : "Sign up"}
         </h2>
 
         {error && (
