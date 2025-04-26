@@ -16,34 +16,6 @@ type TransactionType = {
   description: string;
 };
 
-// export async function createUser(email: string, name: string, phone: string) {
-//   try {
-//     const [user] = await db
-//       .insert(Users)
-//       .values({ email, name, phone })
-//       .returning()
-//       .execute();
-//     return user;
-//   } catch (error) {
-//     console.error("Error creating user:", error);
-//     return null;
-//   }
-// }
-
-// export async function getUserByEmail(email: string) {
-//   try {
-//     const [user] = await db
-//       .select()
-//       .from(Users)
-//       .where(eq(Users.email, email))
-//       .execute();
-//     return user;
-//   } catch (error) {
-//     console.error("Error fetching user by email:", error);
-//     return null;
-//   }
-// }
-
 // db/actions.ts
 export async function createUser(email: string, name: string, phone: string) {
   try {
@@ -611,20 +583,6 @@ export async function redeemReward(userId: number, rewardId: number) {
     throw error;
   }
 }
-
-// export async function getUserBalance(userId: number): Promise<number> {
-//   const transactions = await getRewardTransactions(userId);
-//   const balance = transactions.reduce(
-//     (acc: number, transaction: TransactionType) => {
-//       return transaction.type.startsWith("earned")
-//         ? acc + transaction.amount
-//         : acc - transaction.amount;
-//     },
-//     0
-//   );
-//   return Math.max(balance, 0); // Ensure balance is never negative
-// }
-
 export async function getUserBalance(userId: number): Promise<number> {
   try {
     const transactions = await getRewardTransactions(userId);
