@@ -5,7 +5,7 @@ import { LogIn, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { createUser, getUserByEmail } from "@/utils/db/actions";
 import * as bcrypt from "bcryptjs";
-import { compare } from 'bcryptjs';
+import { compare } from "bcryptjs";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +22,76 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     if (isLogin) {
+  //       console.log("Login attempt for:", email);
+  //       const user = await getUserByEmail(email);
+
+  //       if (!user) {
+  //         console.error("No user found for email:", email);
+  //         throw new Error("User's email not found. Please sign up.");
+  //       }
+
+  //       if (!user.password) {
+  //         console.error("User has no password set:", user);
+  //         throw new Error("Account configuration error. Please contact support.");
+  //       }
+
+  //       const isMatch = await bcrypt.compare(password, user.password);
+  //       console.log("Password match result:", isMatch);
+
+  //       if (!isMatch) {
+  //         // console.error("Password mismatch for user:", email);
+  //         throw new Error("Invalid credentials. Please try again.");
+  //       }
+
+  //       console.log("Login successful for:", email);
+  //       onLoginSuccess(email, user.name, user.role || "0");
+  //     } else {
+  //       // Signup logic - new users get role "0" (reporter) by default
+  //       console.log("Attempting to create user:", { email, name, phone });
+
+  //       if (password.length < 6) {
+  //         throw new Error("Password must be atleast 6 characters long");
+  //       }
+
+  //       const existingUser = await getUserByEmail(email);
+  //       if (existingUser) {
+  //         throw new Error("An account with this email already exists");
+  //       }
+
+  //       const result = await createUser(email, name, password, phone);
+  //       // const result = await createUser(email, name,password, phone);
+
+  //       if (!result) {
+  //         console.error("Signup failed: No result returned from createUser");
+  //         throw new Error("Failed to create user account");
+  //       }
+
+  //       if (result.error) {
+  //         console.error("Signup failed:", result.error);
+  //         throw new Error(result.error);
+  //       }
+
+  //       console.log("User created successfully:", { email, name, phone });
+  //       onLoginSuccess(email, name, result.role || "0"); // Explicitly set role to "0" for new users
+  //     }
+
+  //     onClose();
+  //   } catch (err) {
+  //     const errorMessage =
+  //       err instanceof Error ? err.message : "An unknown error occurred";
+  //     console.error("Authentication error:", errorMessage);
+  //     setError(errorMessage);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -29,64 +99,63 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
 
     try {
       if (isLogin) {
-        console.log("Login attempt for:", email);
+        // Login logic
         const user = await getUserByEmail(email);
-  
-        if (!user) {
-          console.error("No user found for email:", email);
-          throw new Error("User's email not found. Please sign up.");
-        }
-  
-        if (!user.password) {
-          console.error("User has no password set:", user);
-          throw new Error("Account configuration error. Please contact support.");
-        }
-  
-        const isMatch = await bcrypt.compare(password, user.password);
-        console.log("Password match result:", isMatch);
-  
-        if (!isMatch) {
-          // console.error("Password mismatch for user:", email);
-          throw new Error("Invalid credentials. Please try again.");
-        }
-  
-        console.log("Login successful for:", email);
-        onLoginSuccess(email, user.name, user.role || "0");
-      } else {
-        // Signup logic - new users get role "0" (reporter) by default
-        console.log("Attempting to create user:", { email, name, phone });
 
+        if (!user) {
+          throw new Error("No account found with this email");
+        }
+
+        if (!user.password) {
+          throw new Error(
+            "Account configuration error - please reset your password"
+          );
+        }
+
+        // Debugging logs
+        console.log("Stored hash:", user.password);
+        console.log("Input password:", password);
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+          throw new Error("Invalid password - please try again");
+        }
+
+        onLoginSuccess(user.email, user.name, user.role || "0");
+      } else {
+        // Signup logic
         if (password.length < 6) {
-          throw new Error("Password must be atleast 6 characters long");
+          throw new Error("Password must be at least 6 characters");
         }
 
         const existingUser = await getUserByEmail(email);
         if (existingUser) {
-          throw new Error("An account with this email already exists");
+          throw new Error("Email already in use");
         }
 
-        const result = await createUser(email, name, password, phone);
-        // const result = await createUser(email, name,password, phone);
+        const newUser = await createUser(email, name, password, phone);
 
-        if (!result) {
-          console.error("Signup failed: No result returned from createUser");
-          throw new Error("Failed to create user account");
+        if (!newUser || (newUser as any).error) {
+          throw new Error("Failed to create account - please try again");
         }
 
-        if (result.error) {
-          console.error("Signup failed:", result.error);
-          throw new Error(result.error);
-        }
-
-        console.log("User created successfully:", { email, name, phone });
-        onLoginSuccess(email, name, result.role || "0"); // Explicitly set role to "0" for new users
+        onLoginSuccess(email, name, "0"); // New users get role "0" (Reporter)
       }
 
       onClose();
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "An unknown error occurred";
-      console.error("Authentication error:", errorMessage);
+        err instanceof Error
+          ? err.message
+          : "Authentication failed - please try again";
+
+      console.error("Auth error details:", {
+        error: err,
+        email,
+        isLogin,
+      });
+
       setError(errorMessage);
     } finally {
       setLoading(false);

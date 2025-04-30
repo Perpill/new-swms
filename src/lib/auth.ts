@@ -32,3 +32,51 @@ export function setAuthCookie(res: any, token: string) {
 export function verifyToken(token: string) {
   return verify(token, SECRET);
 }
+export async function getServerSession(): Promise<{
+  user: { id: string; email?: string; role: string } | null;
+}> {
+  const authHeader = headers().get('authorization');
+  const token = authHeader?.split(' ')[1] || cookies().get('authToken')?.value;
+
+  if (!token) {
+    return { user: null };
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    return {
+      user: {
+        id: decoded.userId,
+        role: decoded.role,
+      },
+    };
+  } catch (error) {
+    return { user: null };
+  }
+}
+
+// Protection middleware utilities
+export async function protectRoute(requiredRole?: string) {
+  const session = await getSession();
+  
+  if (!session.user) {
+    redirect('/login');
+  }
+
+  if (requiredRole && session.user.role !== requiredRole) {
+    redirect('/unauthorized');
+  }
+
+  return session;
+}
+
+// Admin-specific utility
+export async function requireAdmin() {
+  return protectRoute('2');
+}
+
+// src/lib/auth.js
+export async function checkAdmin() {
+  const role = localStorage.getItem('userRole');
+  return role === '2'; // 2 = admin
+}

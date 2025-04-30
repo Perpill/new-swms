@@ -18,12 +18,13 @@ const commonItems = [
   { href: "/leaderboard", label: "Leaderboard" },
 ];
 
-const reporterOnlyItems = [
-  { href: "/report", label: "Report Waste" },
-];
+const reporterOnlyItems = [{ href: "/report", label: "Report Waste" }];
 
-const collectorOnlyItems = [
-  { href: "/collect",  label: "Collect Waste" },
+const collectorOnlyItems = [{ href: "/collect", label: "Collect Waste" }];
+
+// Items only visible to admins (role=2)
+const adminOnlyItems = [
+  { href: "/assign-role", label: "Assign Roles" }, // New admin-only link
 ];
 
 interface SidebarProps {
@@ -58,7 +59,7 @@ export default function Sidebar({ open }: SidebarProps) {
             id: userData.id,
             email: userData.email,
             name: userData.name,
-            role: userData.role//.toLowerCase(), // Ensure lowercase for consistency
+            role: userData.role, //.toLowerCase(), // Ensure lowercase for consistency
           });
         }
       } catch (error) {
@@ -89,10 +90,18 @@ export default function Sidebar({ open }: SidebarProps) {
   const getSidebarItems = () => {
     const items = [...commonItems];
 
-    if (user?.role === "0") {//reporter
+    if (user?.role === "0") {
+      //reporter
       items.push(...reporterOnlyItems);
-    } else if (user?.role === "1") { //collector
+    } else if (user?.role === "1") {
+      //collector
       items.push(...collectorOnlyItems);
+    } else if (user?.role === "2") {
+      items.push(
+        ...reporterOnlyItems,
+        ...collectorOnlyItems,
+        ...adminOnlyItems
+      );
     }
 
     return items;

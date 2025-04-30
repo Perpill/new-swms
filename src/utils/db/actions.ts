@@ -19,32 +19,95 @@ type TransactionType = {
 };
 
 // db/actions.ts
-export async function createUser(email: string, name: string,password:string, phone: string) {
-  try {
-    const existingUser = await getUserByEmail(email);
-    if (existingUser) {
-      return { error: "User already exists. Please log in." };
-    }
+// export async function createUser(email: string, name: string,password:string, phone: string) {
+//   try {
+//     const existingUser = await getUserByEmail(email);
+//     if (existingUser) {
+//       return { error: "User already exists. Please log in." };
+//     }
     
-    const hashedPassword=await bcrypt.hash(password,10)
-    const [user] = await db
-      .insert(Users)
-      .values({ 
-        email, 
-        name, 
-        password:hashedPassword,
-        phone,
-        role: '0' // Default role for new users
+//     const hashedPassword=await bcrypt.hash(password,10)
+//     const [user] = await db
+//       .insert(Users)
+//       .values({ 
+//         email, 
+//         name, 
+//         password:hashedPassword,
+//         phone,
+//         role: '0' // Default role for new users
+//       })
+//       .returning()
+//       .execute();
+//     return user;
+//   } catch (error) {
+//     console.error("Error creating user:", error);
+//     return { error: error.message };
+//   }
+// }
+
+// utils/db/actions.ts
+export async function getAllUsers() {
+  try {
+    const users = await db
+      .select({
+        id: Users.id,
+        email: Users.email,
+        name: Users.name,
+        role: Users.role
       })
-      .returning()
+      .from(Users)
       .execute();
-    return user;
+    return users;
   } catch (error) {
-    console.error("Error creating user:", error);
-    return { error: error.message };
+    console.error("Error fetching all users:", error);
+    return [];
   }
 }
 
+export async function updateUserRole(userId: number | string, newRole: UserRole): Promise<User | null> {
+  try {
+    // Convert userId to number if it's a string (if your DB expects number)
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
+    const updatedUser = await db
+      .update(Users)
+      .set({ role: newRole })
+      .where(eq(Users.id, numericUserId))
+      .returning({
+        id: Users.id,
+        email: Users.email,
+        name: Users.name,
+        role: Users.role
+      });
+
+    return updatedUser[0] || null;
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    throw error;
+  }
+}
+
+// export async function getUserByEmail(email: string) {
+//   try {
+//     const [user] = await db
+//       .select({
+//         id: Users.id,
+//         email: Users.email,
+//         name: Users.name,
+//         password: Users.password,
+//         phone: Users.phone,
+//         role: Users.role // Include role in the selection
+//       })
+//       .from(Users)
+//       .where(eq(Users.email, email))
+//       .execute();
+//     return user || null;
+//   } catch (error) {
+//     console.error("Error fetching user by email:", error);
+//     return null;
+//   }
+// }
+// For getUserByEmail
 export async function getUserByEmail(email: string) {
   try {
     const [user] = await db
@@ -54,7 +117,7 @@ export async function getUserByEmail(email: string) {
         name: Users.name,
         password: Users.password,
         phone: Users.phone,
-        role: Users.role // Include role in the selection
+        role: Users.role
       })
       .from(Users)
       .where(eq(Users.email, email))
@@ -63,6 +126,39 @@ export async function getUserByEmail(email: string) {
   } catch (error) {
     console.error("Error fetching user by email:", error);
     return null;
+  }
+}
+
+// For createUser
+export async function createUser(
+  email: string,
+  name: string,
+  password: string,
+  phone: string
+) {
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const [newUser] = await db
+      .insert(Users)
+      .values({
+        email,
+        name,
+        password: hashedPassword,
+        phone,
+        role: "0" // Default role for new users
+      })
+      .returning({
+        id: Users.id,
+        email: Users.email,
+        name: Users.name,
+        role: Users.role
+      });
+
+    return newUser;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return { error: "Failed to create user account" };
   }
 }
 

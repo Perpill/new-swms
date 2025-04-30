@@ -97,37 +97,48 @@ export default function ReportPage() {
         toast.error("No content to print");
         return;
       }
-
-      // Clone the content to avoid modifying the original
-      // const printContent = content.cloneNode(true) as HTMLDivElement;
-
-      // Remove interactive elements that might cause issues
-      // const inputs = printContent.querySelectorAll("input");
-      // inputs.forEach((input) => input.remove());
-
+  
       const printWindow = window.open("", "", "width=800,height=600");
       if (!printWindow) return;
-
+  
       printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print</title>
-          <style>
-            table, th, td {
-              border: 1px solid black;
-              border-collapse: collapse;
-              padding: 8px;
-            }
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
-    `);
-
+        <html>
+          <head>
+            <title>Print</title>
+            <style>
+              table, th, td {
+                border: 1px solid black;
+                border-collapse: collapse;
+                padding: 8px;
+              }
+              th {
+                background-color: #f2f2f2;
+              }
+              .print-container {
+                padding: 20px;
+              }
+              h2 {
+                margin-bottom: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="print-container">
+              ${content}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.close();
+                }, 200);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+  
       printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
     } catch (error) {
       toast.error("Failed to print");
       console.error("Print error:", error);
