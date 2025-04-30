@@ -1,11 +1,11 @@
 "use client";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { MapPin, Upload, CheckCircle, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { StandaloneSearchBox, useJsApiLoader } from "@react-google-maps/api";
 import { Libraries } from "@react-google-maps/api";
-import ContractInteraction from "@/components/ContractInteraction";
+import { ContractInteraction } from "@/components/ContractInteraction";
 import { EXIF } from "exif-js";
 import {
   createUser,
@@ -15,6 +15,9 @@ import {
 } from "@/utils/db/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+// import { useRef } from "react";
+// import ReactToPrint from "react-to-print";
+// import { useReactToPrint } from "react-to-print";
 
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -44,6 +47,12 @@ export default function ReportPage() {
     type: "",
     amount: "",
   });
+  const [filters, setFilters] = useState({
+    location: "",
+    type: "",
+    amount: "",
+    date: "",
+  });
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -56,12 +65,76 @@ export default function ReportPage() {
     confidence: number;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: googleMapsApiKey!,
     libraries: libraries,
   });
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const filteredReports = reports.filter((report) => {
+    return (
+      report.location.toLowerCase().includes(filters.location.toLowerCase()) &&
+      report.wasteType.toLowerCase().includes(filters.type.toLowerCase()) &&
+      report.amount.toLowerCase().includes(filters.amount.toLowerCase()) &&
+      report.createdAt.toLowerCase().includes(filters.date.toLowerCase())
+    );
+  });
+
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    try {
+      const content = tableRef.current?.innerHTML;
+      if (!content) {
+        toast.error("No content to print");
+        return;
+      }
+
+      // Clone the content to avoid modifying the original
+      // const printContent = content.cloneNode(true) as HTMLDivElement;
+
+      // Remove interactive elements that might cause issues
+      // const inputs = printContent.querySelectorAll("input");
+      // inputs.forEach((input) => input.remove());
+
+      const printWindow = window.open("", "", "width=800,height=600");
+      if (!printWindow) return;
+
+      printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print</title>
+          <style>
+            table, th, td {
+              border: 1px solid black;
+              border-collapse: collapse;
+              padding: 8px;
+            }
+          </style>
+        </head>
+        <body>${content}</body>
+      </html>
+    `);
+
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    } catch (error) {
+      toast.error("Failed to print");
+      console.error("Print error:", error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -81,13 +154,12 @@ export default function ReportPage() {
       const data = await response.json();
 
       if (data.status === "OK" && data.results.length > 0) {
-
         // Update the location field in your form
         setNewReport((prev) => ({
           ...prev,
           location: data.results[0].formatted_address,
         }));
-        console.log("Extracted Address:", formatted_address);
+        console.log("Extracted Address:", data.results[0].formatted_address);
       } else {
         toast.error("Could not determine address from coordinates");
         console.error("No address found for these coordinates.");
@@ -183,7 +255,7 @@ export default function ReportPage() {
         1. The type of waste (e.g., plastic, paper, glass, metal, organic)
         2. An estimate of the quantity or amount (in kg or liters)
         3. Your confidence level in this assessment (as a percentage)
-        
+
         Respond in JSON format like this:
         {
           "wasteType": "type of waste",
@@ -458,52 +530,112 @@ export default function ReportPage() {
         </Button>
       </form>
 
-      <h2 className="text-3xl font-semibold mb-6 text-gray-800">
-        Recent Reports
-      </h2>
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div className="max-h-96 overflow-y-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {reports.map((report) => (
-                <tr
-                  key={report.id}
-                  className="hover:bg-gray-50 transition-colors duration-200"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.location}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.wasteType}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.amount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.createdAt}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="mt-5">
+        <div
+          ref={tableRef}
+          className="print-container p-4"
+          id="table-print-content"
+        >
+          <h2 className="text-3xl font-semibold mb-6 text-gray-800">
+            Recent Reports
+          </h2>
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr className="bg-white">
+                    <td className="px-6 py-2">
+                      <input
+                        type="text"
+                        name="location"
+                        value={filters.location}
+                        onChange={handleFilterChange}
+                        placeholder="Filter"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                      />
+                    </td>
+                    <td className="px-6 py-2">
+                      <input
+                        type="text"
+                        name="type"
+                        value={filters.type}
+                        onChange={handleFilterChange}
+                        placeholder="Filter"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                      />
+                    </td>
+                    <td className="px-6 py-2">
+                      <input
+                        type="text"
+                        name="amount"
+                        value={filters.amount}
+                        onChange={handleFilterChange}
+                        placeholder="Filter"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                      />
+                    </td>
+                    <td className="px-6 py-2">
+                      <input
+                        type="text"
+                        name="date"
+                        value={filters.date}
+                        onChange={handleFilterChange}
+                        placeholder="Filter"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                      />
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredReports.map((report) => (
+                    <tr
+                      key={report.id}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.location}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.wasteType}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.amount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.createdAt}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        <button
+          onClick={handlePrint}
+          disabled={isPrinting}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mb-4"
+        >
+          {isPrinting ? "Preparing print..." : "Print Recent Reports"}
+        </button>
       </div>
     </div>
+    // </div>
   );
 }

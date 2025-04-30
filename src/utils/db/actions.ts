@@ -8,6 +8,8 @@ import {
   Transactions,
 } from "./schema";
 import { eq, sql, and, desc, ne } from "drizzle-orm";
+import * as bcrypt from "bcryptjs";
+import { hash } from 'bcryptjs';
 
 type TransactionType = {
   type: string;
@@ -17,13 +19,20 @@ type TransactionType = {
 };
 
 // db/actions.ts
-export async function createUser(email: string, name: string, phone: string) {
+export async function createUser(email: string, name: string,password:string, phone: string) {
   try {
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return { error: "User already exists. Please log in." };
+    }
+    
+    const hashedPassword=await bcrypt.hash(password,10)
     const [user] = await db
       .insert(Users)
       .values({ 
         email, 
         name, 
+        password:hashedPassword,
         phone,
         role: '0' // Default role for new users
       })
@@ -43,6 +52,7 @@ export async function getUserByEmail(email: string) {
         id: Users.id,
         email: Users.email,
         name: Users.name,
+        password: Users.password,
         phone: Users.phone,
         role: Users.role // Include role in the selection
       })

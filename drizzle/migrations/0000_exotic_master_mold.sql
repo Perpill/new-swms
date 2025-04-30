@@ -50,8 +50,17 @@ CREATE TABLE "transactions" (
 	"date" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "phone" varchar(255) NOT NULL;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "role" varchar(2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"name" varchar(255) NOT NULL,
+	"password" varchar(255) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"phone" varchar(255) NOT NULL,
+	"role" varchar(2) DEFAULT '0' NOT NULL,
+	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
 ALTER TABLE "collected_wastes" ADD CONSTRAINT "collected_wastes_report_id_reports_id_fk" FOREIGN KEY ("report_id") REFERENCES "public"."reports"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collected_wastes" ADD CONSTRAINT "collected_wastes_collector_id_users_id_fk" FOREIGN KEY ("collector_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

@@ -3,10 +3,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  createUser,
-  getUserByEmail,
-} from "@/utils/db/actions";
+import { createUser, getUserByEmail } from "@/utils/db/actions";
+import * as bcrypt from "bcryptjs";
+import { compare } from 'bcryptjs';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -30,26 +29,44 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
 
     try {
       if (isLogin) {
-        // Login logic
-        console.log("Attempting login for email:", email);
+        console.log("Login attempt for:", email);
         const user = await getUserByEmail(email);
-
+  
         if (!user) {
-          console.error("Login failed: User not found for email:", email);
-          throw new Error(
-            "User not found. Please check your email or sign up."
-          );
+          console.error("No user found for email:", email);
+          throw new Error("User's email not found. Please sign up.");
         }
-
-        console.log("User found:", user);
-        // Ensure role exists, default to "0" if not
-        const userRole = user.role || "0"; // Default role for all users
-        onLoginSuccess(email, user.name, userRole);
+  
+        if (!user.password) {
+          console.error("User has no password set:", user);
+          throw new Error("Account configuration error. Please contact support.");
+        }
+  
+        const isMatch = await bcrypt.compare(password, user.password);
+        console.log("Password match result:", isMatch);
+  
+        if (!isMatch) {
+          // console.error("Password mismatch for user:", email);
+          throw new Error("Invalid credentials. Please try again.");
+        }
+  
+        console.log("Login successful for:", email);
+        onLoginSuccess(email, user.name, user.role || "0");
       } else {
         // Signup logic - new users get role "0" (reporter) by default
         console.log("Attempting to create user:", { email, name, phone });
 
-        const result = await createUser(email, name, phone);
+        if (password.length < 6) {
+          throw new Error("Password must be atleast 6 characters long");
+        }
+
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+          throw new Error("An account with this email already exists");
+        }
+
+        const result = await createUser(email, name, password, phone);
+        // const result = await createUser(email, name,password, phone);
 
         if (!result) {
           console.error("Signup failed: No result returned from createUser");
@@ -112,7 +129,10 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
                   </label>
                   <Input
                     id="phone"
-                    type="tel"
+                    minLength={10}
+                    maxLength={15}
+                    placeholder="Enter 10-digit phone number"
+                    type="integer"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required={!isLogin}
@@ -129,9 +149,12 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
                   <Input
                     id="name"
                     type="text"
+                    placeholder="Enter you name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required={!isLogin}
+                    maxLength={255}
+                    minLength={4}
                   />
                 </div>
               </>
@@ -146,6 +169,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
               </label>
               <Input
                 id="email"
+                placeholder="Enter your email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -163,6 +187,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }: AuthModalProps) => {
               <Input
                 id="password"
                 type="password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

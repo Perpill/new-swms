@@ -14,9 +14,10 @@ export const Users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
+  password: varchar("password", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   phone: varchar("phone", { length: 255 }).notNull(),
-  role: varchar("role", { length: 2 }).notNull().default("0"), //1 is the admin, 2 might be a later role maybe assigned in the future
+  role: varchar("role", { length: 2 }).notNull().default("0"), //1 is the collector, 2 might be a later role maybe assigned in the future
 });
 
 // Reports table
